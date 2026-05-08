@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import time
 
-API_BASE_URL = "http://127.0.0.1:8000/api/v1"
+from config import API_BASE_URL
 
 def render_test():
     st.title("🧠 Assessments")

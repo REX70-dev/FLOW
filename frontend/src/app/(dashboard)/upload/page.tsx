@@ -1,141 +1,175 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { BrainCircuit, FileText, Image as ImageIcon, Loader2, Network, Radar, Upload, Youtube } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Upload, Youtube, Image as ImageIcon, FileText, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { fetchAPI } from "@/lib/api";
 
 export default function UploadPage() {
   const [activeTab, setActiveTab] = useState<"youtube" | "pdf" | "image">("youtube");
   const [isLoading, setIsLoading] = useState(false);
   const [url, setUrl] = useState("");
-  const [statusMessage, setStatusMessage] = useState("Extracting Intelligence...");
+  const [statusMessage, setStatusMessage] = useState("Extracting intelligence...");
   const router = useRouter();
 
   const pollStatus = async (taskId: string) => {
     try {
       const result = await fetchAPI(`/ingest/status/${taskId}`);
-      
+
       if (result.status === "completed") {
         setIsLoading(false);
-        // We will store the result in localStorage temporarily to pass it to the study viewer
         localStorage.setItem("currentStudyMaterial", JSON.stringify(result.study_material));
         router.push("/study/recent");
       } else {
-        setStatusMessage(`Status: ${result.status.replace("_", " ")}...`);
-        setTimeout(() => pollStatus(taskId), 3000);
+        setStatusMessage(`Status: ${String(result.status).replace("_", " ")}...`);
+        setTimeout(() => {
+          void pollStatus(taskId);
+        }, 3000);
       }
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
       setIsLoading(false);
-      alert("Failed to process material.");
+      window.alert("Failed to process material.");
     }
   };
 
-  const handleUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpload = async (event: React.FormEvent) => {
+    event.preventDefault();
     setIsLoading(true);
     setStatusMessage("Initiating request...");
-    
+
     try {
       const taskId = `task_${Date.now()}`;
-      
+
       if (activeTab === "youtube") {
         await fetchAPI("/ingest/youtube", {
           method: "POST",
           body: JSON.stringify({ url, task_id: taskId }),
         });
-        pollStatus(taskId);
+        void pollStatus(taskId);
       } else {
-        // Handle PDF/Image upload logic here
         setIsLoading(false);
-        alert("File uploads require a file input to be implemented in the demo.");
+        window.alert("File upload UX is now product-positioned, but a binary file submission flow still needs to be connected in the Next frontend.");
       }
     } catch (error) {
       console.error(error);
       setIsLoading(false);
-      alert("Error starting ingestion.");
+      window.alert("Error starting ingestion.");
     }
   };
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
+    <div className="mx-auto max-w-5xl p-8">
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Ingest New Material</h1>
-        <p className="text-gray-500">Upload a PDF, Image, or paste a YouTube link to generate AI study material.</p>
+        <p className="text-sm uppercase tracking-[0.24em] text-primary">Input engine</p>
+        <h1 className="mt-3 font-heading text-4xl font-semibold tracking-tight">Turn raw content into a study system.</h1>
+        <p className="mt-3 text-muted-foreground">
+          Ingest lectures, scanned notes, or documents and let FLOW transform them into summaries, revision notes,
+          and test-ready knowledge blocks.
+        </p>
       </div>
 
-      <div className="flex justify-center mb-8 space-x-4">
-        <Button 
-          variant={activeTab === "youtube" ? "default" : "outline"} 
-          onClick={() => setActiveTab("youtube")}
-          className="gap-2"
-        >
-          <Youtube className="w-4 h-4" /> YouTube
+      <div className="mb-8 grid gap-4 md:grid-cols-3">
+        <Card className="rounded-[1.5rem] bg-white/90">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <BrainCircuit className="h-5 w-5 text-primary" />
+              AI structuring
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm leading-7 text-muted-foreground">
+            Generate summaries, key points, revision notes, and concept-level understanding from each ingestion.
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-[1.5rem] bg-white/90">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Network className="h-5 w-5 text-primary" />
+              Topic linking
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm leading-7 text-muted-foreground">
+            Prepare material for related-topic expansion, weak-topic loops, and future knowledge graph features.
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-[1.5rem] bg-white/90">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Radar className="h-5 w-5 text-primary" />
+              Revision-ready outputs
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm leading-7 text-muted-foreground">
+            Every material is intended to flow into testing, active recall, and personalized revision schedules.
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="mb-8 flex flex-wrap justify-center gap-4">
+        <Button variant={activeTab === "youtube" ? "default" : "outline"} onClick={() => setActiveTab("youtube")} className="gap-2">
+          <Youtube className="h-4 w-4" />
+          YouTube
         </Button>
-        <Button 
-          variant={activeTab === "pdf" ? "default" : "outline"} 
-          onClick={() => setActiveTab("pdf")}
-          className="gap-2"
-        >
-          <FileText className="w-4 h-4" /> PDF Document
+        <Button variant={activeTab === "pdf" ? "default" : "outline"} onClick={() => setActiveTab("pdf")} className="gap-2">
+          <FileText className="h-4 w-4" />
+          PDF Document
         </Button>
-        <Button 
-          variant={activeTab === "image" ? "default" : "outline"} 
-          onClick={() => setActiveTab("image")}
-          className="gap-2"
-        >
-          <ImageIcon className="w-4 h-4" /> Image / Notes
+        <Button variant={activeTab === "image" ? "default" : "outline"} onClick={() => setActiveTab("image")} className="gap-2">
+          <ImageIcon className="h-4 w-4" />
+          Image / Notes
         </Button>
       </div>
 
-      <Card className="shadow-lg border-gray-200 dark:border-gray-800">
+      <Card className="rounded-[1.75rem] border-gray-200 bg-white/90 shadow-lg dark:border-gray-800">
         <CardHeader>
           <CardTitle>
-            {activeTab === "youtube" && "YouTube URL"}
-            {activeTab === "pdf" && "Upload PDF"}
-            {activeTab === "image" && "Upload Image"}
+            {activeTab === "youtube" && "YouTube lecture ingestion"}
+            {activeTab === "pdf" && "PDF ingestion"}
+            {activeTab === "image" && "Image notes ingestion"}
           </CardTitle>
           <CardDescription>
-            {activeTab === "youtube" && "Paste a public YouTube lecture or tutorial link."}
-            {activeTab === "pdf" && "Upload your course notes, slides, or textbook chapter in PDF format."}
-            {activeTab === "image" && "Upload a photo of your handwritten notes or a textbook page."}
+            {activeTab === "youtube" && "Paste a public lecture or concept video to generate an AI study brief."}
+            {activeTab === "pdf" && "Upload notes, slides, or chapters to extract a revision-oriented structure."}
+            {activeTab === "image" && "Upload a handwritten page or screenshot to start the OCR pipeline."}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleUpload} className="space-y-6">
             {activeTab === "youtube" ? (
               <div className="space-y-2">
-                <Label htmlFor="youtube-url">Video Link</Label>
-                <Input 
-                  id="youtube-url" 
-                  placeholder="https://youtube.com/watch?v=..." 
+                <Label htmlFor="youtube-url">Video link</Label>
+                <Input
+                  id="youtube-url"
+                  placeholder="https://youtube.com/watch?v=..."
                   value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  required 
+                  onChange={(event) => setUrl(event.target.value)}
+                  required
+                  className="h-12 rounded-xl"
                 />
               </div>
             ) : (
-              <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-12 text-center hover:bg-gray-50 dark:hover:bg-gray-900 transition cursor-pointer">
-                <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <div className="rounded-[1.5rem] border-2 border-dashed border-gray-300 p-12 text-center transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-900">
+                <Upload className="mx-auto mb-4 h-12 w-12 text-gray-400" />
                 <p className="text-sm text-gray-600 dark:text-gray-400">Click to upload or drag and drop</p>
-                <p className="text-xs text-gray-500 mt-1">Maximum file size: 50MB</p>
+                <p className="mt-1 text-xs text-gray-500">Maximum file size: 50MB</p>
                 <Input type="file" className="hidden" id="file-upload" />
               </div>
             )}
-            
-            <Button type="submit" className="w-full h-12 text-lg" disabled={isLoading}>
+
+            <Button type="submit" className="h-12 w-full rounded-xl text-lg" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   {statusMessage}
                 </>
               ) : (
-                "Generate Study Material"
+                "Generate study material"
               )}
             </Button>
           </form>
